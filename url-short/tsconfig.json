@@ -111,6 +111,7 @@
         "paths": {
             "@/*": ["./resources/js/*"]
         },
+        "types": ["vitest/globals", "@testing-library/jest-dom"],
         "jsx": "react-jsx"
     },
     "include": [
