@@ -1,0 +1,50 @@
+
+# =========================
+# macOS (equipo Mac)
+# =========================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Icon?
+
+# Volúmenes / metadata
+.Spotlight-V100
+.Trashes
+
+# =========================
+# IDEs / editores
+# =========================
+.idea/
+.vscode/
+
+# =========================
+# Temporales
+# =========================
+*.swp
+*.swo
+*~
+
+# =========================
+# Laravel / PHP (para cuando se agregue)
+# =========================
+vendor/
+.phpunit.result.cache
+
+# Env (no versionar secretos)
+.env
+.env.*
+
+# Storage/cache generados
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+bootstrap/cache/
+
+# Node (si llega a usarse en frontend/build)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
