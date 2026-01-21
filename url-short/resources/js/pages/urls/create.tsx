@@ -1,8 +1,10 @@
 import { Head } from '@inertiajs/react';
-import { useState } from 'react';
+
+import { useCreateUrl } from './useCreateUrl';
 
 export default function UrlsCreate() {
-    const [originalUrl, setOriginalUrl] = useState('');
+    const { originalUrl, setOriginalUrl, submitUrl, isInvalidUrl, isValidUrl } =
+        useCreateUrl();
 
     return (
         <>
@@ -16,10 +18,9 @@ export default function UrlsCreate() {
 
                     <form
                         className="mt-6 flex flex-col gap-4"
-                        onSubmit={(e) => {
+                        onSubmit={async (e) => {
                             e.preventDefault();
-                            // eslint-disable-next-line no-alert
-                            alert(`URL enviada: ${originalUrl}`);
+                            await submitUrl();
                         }}
                     >
                         <div className="flex flex-col gap-2">
@@ -36,22 +37,35 @@ export default function UrlsCreate() {
                                 type="url"
                                 inputMode="url"
                                 placeholder="https://example.com/..."
-                                className="h-12 w-full rounded-xl border border-neutral-200 bg-white px-4 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 focus:border-neutral-300 focus:ring-4 focus:ring-neutral-100"
+                                className={[
+                                    'h-12 w-full rounded-xl border bg-white px-4 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 focus:ring-4',
+                                    isInvalidUrl
+                                        ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
+                                        : 'border-neutral-200 focus:border-neutral-300 focus:ring-neutral-100',
+                                ].join(' ')}
                                 value={originalUrl}
                                 onChange={(e) => setOriginalUrl(e.target.value)}
+                                aria-invalid={isInvalidUrl}
                                 required
                             />
 
-                            <p className="text-sm text-neutral-500">
-                                Tip: incluye <code className="font-mono">https://</code>
-                            </p>
+                            {isInvalidUrl ? (
+                                <p className="text-sm text-red-600">
+                                    Ingresa una URL válida (incluye{' '}
+                                    <code className="font-mono">https://</code>).
+                                </p>
+                            ) : (
+                                <p className="text-sm text-neutral-500">
+                                    Tip: incluye <code className="font-mono">https://</code>
+                                </p>
+                            )}
                         </div>
 
                         <div className="mt-2 flex justify-end">
                             <button
                                 type="submit"
                                 className="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-900 shadow-sm hover:bg-neutral-50 focus:outline-none focus:ring-4 focus:ring-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                disabled={!originalUrl.trim()}
+                                disabled={!isValidUrl}
                             >
                                 CREATE
                             </button>
