@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 
+import { AppHeader } from '../../components/AppHeader';
 import { useCreateUrl } from './useCreateUrl';
 
 export default function UrlsCreate() {
@@ -9,6 +10,8 @@ export default function UrlsCreate() {
     return (
         <>
             <Head title="Crear URL corta" />
+
+            <AppHeader />
 
             <main className="mx-auto w-full max-w-5xl px-4 py-10">
                 <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">

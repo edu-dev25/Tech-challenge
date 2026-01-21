@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 
+import { AppHeader } from '../../components/AppHeader';
 import { getCsrfToken } from '../../lib/utils';
 
 type ShortUrlItem = {
@@ -119,6 +120,8 @@ export default function UrlsList() {
     return (
         <>
             <Head title="Shortened URLs" />
+
+            <AppHeader />
 
             <main className="mx-auto w-full max-w-5xl px-4 py-10">
                 <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
