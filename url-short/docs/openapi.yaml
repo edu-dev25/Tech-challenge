@@ -127,6 +127,7 @@ paths:
     get:
       tags: [urls]
       summary: Obtiene una URL acortada por code
+      description: Solo devuelve registros con `active=true`.
       parameters:
         - name: code
           in: path
@@ -155,6 +156,72 @@ paths:
                       original_url: https://one.test/path
                       created_at: "2026-01-01T00:00:00.000000Z"
                       updated_at: "2026-01-01T00:00:00.000000Z"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CodeNotFoundResponse"
+              examples:
+                notFound:
+                  value:
+                    ok: false
+                    message: Código no encontrado.
+
+    delete:
+      tags: [urls]
+      summary: Desactiva una URL acortada por code (soft delete lógico)
+      description: |
+        Marca `active=false` para el registro con ese `code`.
+
+        Nota: este endpoint usa middleware web (CSRF) si se consume desde navegador.
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: Código de 8 caracteres (hex)
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 8
+            pattern: "^[0-9a-fA-F]{8}$"
+          example: aaaa1111
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [ok, data]
+                properties:
+                  ok:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    type: object
+                    additionalProperties: false
+                    required: [id, code, active]
+                    properties:
+                      id:
+                        type: integer
+                      code:
+                        type: string
+                      active:
+                        type: boolean
+                        enum: [false]
+              examples:
+                deactivated:
+                  value:
+                    ok: true
+                    data:
+                      id: 1
+                      code: aaaa1111
+                      active: false
         "404":
           description: Not Found
           content:

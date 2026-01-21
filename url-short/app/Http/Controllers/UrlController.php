@@ -15,6 +15,7 @@ class UrlController extends Controller
         // Este endpoint se diseñó para ser consumido por fetch/AJAX (Accept: application/json).
         // Si en el futuro queremos una vista Inertia, podemos extenderlo.
         $items = ShortUrl::query()
+            ->where('active', true)
             ->orderByDesc('id')
             ->get(['id', 'code', 'original_url', 'created_at', 'updated_at']);
 
@@ -28,6 +29,7 @@ class UrlController extends Controller
     {
         $item = ShortUrl::query()
             ->where('code', $code)
+            ->where('active', true)
             ->first(['id', 'code', 'original_url', 'created_at', 'updated_at']);
 
         if (!$item) {
@@ -48,6 +50,38 @@ class UrlController extends Controller
                 'original_url' => $item->original_url,
                 'created_at' => $item->created_at,
                 'updated_at' => $item->updated_at,
+            ],
+        ]);
+    }
+
+    public function deactivateByCode(Request $request, string $code): JsonResponse
+    {
+        $item = ShortUrl::query()
+            ->where('code', $code)
+            ->first(['id', 'code', 'active']);
+
+        if (!$item) {
+            return response()->json(
+                [
+                    'ok' => false,
+                    'message' => 'Código no encontrado.',
+                ],
+                404,
+            );
+        }
+
+        // Idempotente: si ya está inactive, no pasa nada.
+        if ($item->active !== false) {
+            $item->active = false;
+            $item->save();
+        }
+
+        return response()->json([
+            'ok' => true,
+            'data' => [
+                'id' => $item->id,
+                'code' => $item->code,
+                'active' => (bool) $item->active,
             ],
         ]);
     }

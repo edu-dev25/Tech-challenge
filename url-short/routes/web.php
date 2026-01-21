@@ -32,6 +32,7 @@ Route::get('/urls/list', function () {
 Route::get('/urls', [UrlController::class, 'index'])->name('urls.index');
 Route::post('/urls', [UrlController::class, 'store'])->name('urls.store');
 Route::get('/urls/{code}', [UrlController::class, 'showByCode'])->name('urls.show');
+Route::delete('/urls/{code}', [UrlController::class, 'deactivateByCode'])->name('urls.deactivate');
 
 // Vista "Wait a moment": recibe {code} y consulta al backend vía /urls/{code}
 Route::get('/{code}', function (string $code) {
