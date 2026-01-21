@@ -10,6 +10,20 @@ use Illuminate\Http\Request;
 
 class UrlController extends Controller
 {
+    public function index(Request $request): JsonResponse
+    {
+        // Este endpoint se diseñó para ser consumido por fetch/AJAX (Accept: application/json).
+        // Si en el futuro queremos una vista Inertia, podemos extenderlo.
+        $items = ShortUrl::query()
+            ->orderByDesc('id')
+            ->get(['id', 'code', 'original_url', 'created_at', 'updated_at']);
+
+        return response()->json([
+            'ok' => true,
+            'data' => $items,
+        ]);
+    }
+
     protected function generateUniqueShortCode(
         AppServiceShortCodeURL $shortCodeService,
         string $originalUrl,
