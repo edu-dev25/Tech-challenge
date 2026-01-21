@@ -4,7 +4,14 @@ import { AppHeader } from '../../components/AppHeader';
 import { useCreateUrl } from './useCreateUrl';
 
 export default function UrlsCreate() {
-    const { originalUrl, setOriginalUrl, submitUrl, isInvalidUrl, isValidUrl } =
+    const {
+        originalUrl,
+        setOriginalUrl,
+        submitUrl,
+        isInvalidUrl,
+        isValidUrl,
+        submitError,
+    } =
         useCreateUrl();
 
     return (
@@ -62,6 +69,10 @@ export default function UrlsCreate() {
                                     Tip: incluye <code className="font-mono">https://</code>
                                 </p>
                             )}
+
+                            {submitError ? (
+                                <p className="text-sm text-red-600">{submitError}</p>
+                            ) : null}
                         </div>
 
                         <div className="mt-2 flex justify-end">

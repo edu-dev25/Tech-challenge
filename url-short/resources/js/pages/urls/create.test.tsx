@@ -24,6 +24,7 @@ describe('UrlsCreate', () => {
             submitUrl,
             isInvalidUrl: false,
             isValidUrl: false,
+            submitError: null,
         });
 
         render(<UrlsCreate />);
@@ -43,6 +44,7 @@ describe('UrlsCreate', () => {
             submitUrl,
             isInvalidUrl: true,
             isValidUrl: false,
+            submitError: null,
         });
 
         render(<UrlsCreate />);
@@ -64,6 +66,7 @@ describe('UrlsCreate', () => {
             submitUrl,
             isInvalidUrl: false,
             isValidUrl: false,
+            submitError: null,
         });
 
         render(<UrlsCreate />);
@@ -83,6 +86,7 @@ describe('UrlsCreate', () => {
             submitUrl,
             isInvalidUrl: false,
             isValidUrl: true,
+            submitError: null,
         });
 
         render(<UrlsCreate />);

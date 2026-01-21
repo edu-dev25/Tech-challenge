@@ -1,10 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import { getCsrfToken } from '@/lib/utils';
+import { redirectTo } from '@/lib/navigation';
 
 export function useCreateUrl() {
     // Estado del input (la URL original escrita por el usuario).
     const [originalUrl, setOriginalUrl] = useState('');
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     // Calcula si el valor actual del input es una URL válida.
     // useMemo evita recalcular si `originalUrl` no cambió.
@@ -37,6 +39,7 @@ export function useCreateUrl() {
     const submitUrl = useCallback(async () => {
         // Guard clause: si la URL no es válida, no hacemos request.
         if (!isValidUrl) return null;
+        setSubmitError(null);
         // Llamada al endpoint backend (ruta Laravel en routes/web.php).
         const res = await fetch('/urls', {
             // Método HTTP.
@@ -62,10 +65,39 @@ export function useCreateUrl() {
         console.log('Response:', data);
 
         // Retornamos la respuesta por si el componente quiere usarla después.
+        // Si todo salió bien, mandamos al usuario al listado.
+        if (res.status === 201 && data && typeof data === 'object' && data.ok === true) {
+            redirectTo('/urls/list');
+            return { res, data };
+        }
+
+        // Si ya existe el registro, mostramos el mensaje bajo el input.
+        if (res.status === 409 && data && typeof data === 'object' && data.ok === false) {
+            const msg = 'message' in data && typeof data.message === 'string' ? data.message : null;
+            setSubmitError(msg ?? 'Esta URL ya cuenta con un registro.');
+            return { res, data };
+        }
+
+        // Para otros errores, mostramos un mensaje genérico si viene.
+        if (!res.ok) {
+            const msg = data && typeof data === 'object' && 'message' in data ? (data as any).message : null;
+            setSubmitError(typeof msg === 'string' ? msg : `Error HTTP ${res.status}`);
+        }
+
         return { res, data };
     }, [isValidUrl, originalUrl]);
 
     // Exponemos estado + setters + submit + flags de validación para UI.
-    return { originalUrl, setOriginalUrl, submitUrl, isValidUrl, isInvalidUrl };
+    return {
+        originalUrl,
+        setOriginalUrl: (value: string) => {
+            setSubmitError(null);
+            setOriginalUrl(value);
+        },
+        submitUrl,
+        isValidUrl,
+        isInvalidUrl,
+        submitError,
+    };
 }
 

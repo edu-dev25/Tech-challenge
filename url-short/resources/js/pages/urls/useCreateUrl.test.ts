@@ -1,9 +1,19 @@
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/lib/navigation', () => ({
+    redirectTo: vi.fn(),
+}));
+
+import { redirectTo } from '@/lib/navigation';
 import { useCreateUrl } from './useCreateUrl';
 
 describe('useCreateUrl', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        document.head.innerHTML = '';
+    });
+
     it('inicializa con URL vacía e inválida', () => {
         const { result } = renderHook(() => useCreateUrl());
 
@@ -57,8 +67,10 @@ describe('useCreateUrl', () => {
     it('submitUrl hace POST /urls con CSRF y body correcto cuando es válida', async () => {
         document.head.innerHTML = '<meta name="csrf-token" content="test-csrf" />';
 
+        const redirectMock = vi.mocked(redirectTo);
         const fetchMock = vi.fn().mockResolvedValue({
             status: 201,
+            ok: true,
             json: async () => ({ ok: true }),
         });
         (globalThis as unknown as { fetch: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
@@ -70,7 +82,7 @@ describe('useCreateUrl', () => {
             result.current.setOriginalUrl('https://example.com');
         });
 
-        const out = await result.current.submitUrl();
+        const out = await act(async () => result.current.submitUrl());
 
         expect(fetchMock).toHaveBeenCalledWith('/urls', {
             method: 'POST',
@@ -86,6 +98,32 @@ describe('useCreateUrl', () => {
         expect(logSpy).toHaveBeenCalledWith('POST /urls status:', 201);
         expect(logSpy).toHaveBeenCalledWith('Response:', { ok: true });
         expect(out?.data).toEqual({ ok: true });
+
+        expect(redirectMock).toHaveBeenCalledWith('/urls/list');
+    });
+
+    it('si el backend responde 409, expone submitError para mostrarlo bajo el input', async () => {
+        document.head.innerHTML = '<meta name="csrf-token" content="test-csrf" />';
+
+        const redirectMock = vi.mocked(redirectTo);
+        const fetchMock = vi.fn().mockResolvedValue({
+            status: 409,
+            ok: false,
+            json: async () => ({ ok: false, message: 'Esta URL ya cuenta con un registro.' }),
+        });
+        (globalThis as unknown as { fetch: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
+
+        const { result } = renderHook(() => useCreateUrl());
+        act(() => {
+            result.current.setOriginalUrl('https://dup.test');
+        });
+
+        await act(async () => {
+            await result.current.submitUrl();
+        });
+
+        expect(result.current.submitError).toBe('Esta URL ya cuenta con un registro.');
+        expect(redirectMock).not.toHaveBeenCalled();
     });
 });
 
