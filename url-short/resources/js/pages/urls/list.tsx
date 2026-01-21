@@ -1,6 +1,8 @@
 import { Head } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 
+import { getCsrfToken } from '../../lib/utils';
+
 type ShortUrlItem = {
     id: number;
     code: string;
@@ -26,8 +28,52 @@ export default function UrlsList() {
     const [items, setItems] = useState<ShortUrlItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [deletingIds, setDeletingIds] = useState<Set<number>>(() => new Set());
 
     const hasItems = useMemo(() => items.length > 0, [items.length]);
+
+    const deleteByCode = async (id: number, code: string) => {
+        // Evita doble click / requests duplicados.
+        if (deletingIds.has(id)) return;
+
+        setDeletingIds((prev) => new Set(prev).add(id));
+        setError(null);
+
+        try {
+            const res = await fetch(`/urls/${encodeURIComponent(code)}`, {
+                method: 'DELETE',
+                headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                },
+                credentials: 'same-origin',
+            });
+
+            const json = (await res.json().catch(() => null)) as
+                | { ok: true }
+                | { ok: false; message?: string }
+                | null;
+
+            // Si ya no existe (404), lo tratamos como "ya no está" y lo quitamos igual del UI.
+            if (!res.ok && res.status !== 404) {
+                const msg =
+                    (json && 'message' in json && json.message) ||
+                    `Error HTTP ${res.status}`;
+                throw new Error(msg);
+            }
+
+            setItems((prev) => prev.filter((x) => x.id !== id));
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Error desconocido';
+            setError(msg);
+        } finally {
+            setDeletingIds((prev) => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
+        }
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -145,13 +191,12 @@ export default function UrlsList() {
                                                     </a>
                                                     <button
                                                         type="button"
-                                                        className="inline-flex h-9 w-10 items-center justify-center rounded-xl border border-neutral-300 bg-white text-sm font-medium text-neutral-900 opacity-60 hover:bg-neutral-50 focus:outline-none focus:ring-4 focus:ring-neutral-100"
+                                                        className="inline-flex h-9 w-10 items-center justify-center rounded-xl border border-neutral-300 bg-white text-sm font-medium text-neutral-900 opacity-60 hover:bg-neutral-50 focus:outline-none focus:ring-4 focus:ring-neutral-100 disabled:cursor-not-allowed disabled:opacity-40"
                                                         aria-label={`Delete ${item.code}`}
                                                         title="Delete"
-                                                        // Placeholder: sin lógica por ahora
-                                                        onClick={() => {
-                                                            // eslint-disable-next-line no-console
-                                                            console.log('TODO: delete', item.id);
+                                                        disabled={deletingIds.has(item.id)}
+                                                        onClick={async () => {
+                                                            await deleteByCode(item.id, item.code);
                                                         }}
                                                     >
                                                         🗑
