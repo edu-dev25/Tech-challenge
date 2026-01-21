@@ -5,10 +5,6 @@ use App\Models\ShortUrl;
 use App\Services\AppServiceShortCodeURL;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-/**
- * Nota: testeamos `generateUniqueShortCode` sin Reflection::setAccessible (deprecado)
- * exponiéndolo vía un wrapper público en un controller de prueba.
- */
 
 class TestableUrlController extends UrlController
 {
