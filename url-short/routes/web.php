@@ -4,6 +4,17 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\UrlController;
 
+Route::get('/docs', function () {
+    return view('docs.swagger');
+})->name('docs.swagger');
+
+Route::get('/docs/openapi.yaml', function () {
+    $path = base_path('docs/openapi.yaml');
+    return response()->file($path, [
+        'Content-Type' => 'application/yaml; charset=UTF-8',
+    ]);
+})->name('docs.openapi');
+
 Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');

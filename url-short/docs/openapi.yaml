@@ -1,0 +1,282 @@
+openapi: 3.0.3
+info:
+  title: URL Shortener API
+  version: 1.0.0
+  description: |
+    API REST para crear y consultar URLs acortadas.
+
+    **Nota**: este proyecto corre bajo sesión web (Laravel) y protege el `POST /urls`
+    con CSRF. Para consumo desde frontend (Inertia/React), enviar:
+    - Cookie de sesión (`laravel_session`, `XSRF-TOKEN`)
+    - Header `X-CSRF-TOKEN`
+servers:
+  - url: http://localhost:8000
+    description: Local (Laravel)
+
+tags:
+  - name: urls
+    description: Operaciones de URLs acortadas
+
+paths:
+  /urls:
+    get:
+      tags: [urls]
+      summary: Lista URLs acortadas
+      description: Devuelve el listado completo (ordenado por `id` desc).
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortUrlListResponse"
+              examples:
+                ok:
+                  value:
+                    ok: true
+                    data:
+                      - id: 2
+                        code: bbbb2222
+                        original_url: https://two.test
+                        created_at: "2026-01-01T00:00:00.000000Z"
+                        updated_at: "2026-01-01T00:00:00.000000Z"
+                      - id: 1
+                        code: aaaa1111
+                        original_url: https://one.test
+                        created_at: "2026-01-01T00:00:00.000000Z"
+                        updated_at: "2026-01-01T00:00:00.000000Z"
+    post:
+      tags: [urls]
+      summary: Crea una URL acortada
+      description: |
+        Crea un registro con un `code` (máximo 8 chars) y la `original_url`.
+
+        Reglas principales:
+        - `original_url` requerida, string, URL válida, máximo 2048.
+        - Debe iniciar con `http://` o `https://`.
+        - Evita duplicados por `original_url` (retorna 409).
+        - Genera `code` aleatorio y reintenta para evitar colisiones.
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateShortUrlRequest"
+            examples:
+              example:
+                value:
+                  original_url: https://example.com/path
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortUrlItemResponse"
+              examples:
+                created:
+                  value:
+                    ok: true
+                    data:
+                      id: 10
+                      code: cafebabe
+                      original_url: https://example.com/path
+                      created_at: "2026-01-01T00:00:00.000000Z"
+                      updated_at: "2026-01-01T00:00:00.000000Z"
+        "409":
+          description: Conflict (la original_url ya existe)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DuplicateOriginalUrlResponse"
+              examples:
+                duplicate:
+                  value:
+                    ok: false
+                    message: Esta URL ya cuenta con un registro.
+                    data:
+                      id: 1
+                      code: deadbeef
+                      original_url: https://dup.test
+                      created_at: "2026-01-01T00:00:00.000000Z"
+                      updated_at: "2026-01-01T00:00:00.000000Z"
+        "422":
+          description: Unprocessable Content (validación Laravel)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LaravelValidationError"
+              examples:
+                invalid:
+                  value:
+                    message: The original url field is required.
+                    errors:
+                      original_url:
+                        - The original url field is required.
+        "500":
+          description: Error interno (ej. no se pudo generar un code único)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericError"
+
+  /urls/{code}:
+    get:
+      tags: [urls]
+      summary: Obtiene una URL acortada por code
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: Código de 8 caracteres (hex)
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 8
+            pattern: "^[0-9a-fA-F]{8}$"
+          example: aaaa1111
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortUrlItemResponse"
+              examples:
+                ok:
+                  value:
+                    ok: true
+                    data:
+                      id: 1
+                      code: aaaa1111
+                      original_url: https://one.test/path
+                      created_at: "2026-01-01T00:00:00.000000Z"
+                      updated_at: "2026-01-01T00:00:00.000000Z"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CodeNotFoundResponse"
+              examples:
+                notFound:
+                  value:
+                    ok: false
+                    message: Código no encontrado.
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: laravel_session
+      description: Cookie de sesión de Laravel.
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+      description: Token CSRF obtenido desde el meta tag `csrf-token`.
+
+  schemas:
+    CreateShortUrlRequest:
+      type: object
+      additionalProperties: false
+      required: [original_url]
+      properties:
+        original_url:
+          type: string
+          format: uri
+          maxLength: 2048
+          description: URL original (debe iniciar con http/https)
+          example: https://example.com/path
+
+    ShortUrlItem:
+      type: object
+      additionalProperties: false
+      required: [id, code, original_url, created_at, updated_at]
+      properties:
+        id:
+          type: integer
+          example: 1
+        code:
+          type: string
+          description: Código corto (8 chars hex)
+          minLength: 8
+          maxLength: 8
+          example: aaaa1111
+        original_url:
+          type: string
+          format: uri
+          example: https://one.test/path
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-01T00:00:00.000000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-01-01T00:00:00.000000Z"
+
+    ShortUrlItemResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, data]
+      properties:
+        ok:
+          type: boolean
+          enum: [true]
+        data:
+          $ref: "#/components/schemas/ShortUrlItem"
+
+    ShortUrlListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, data]
+      properties:
+        ok:
+          type: boolean
+          enum: [true]
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShortUrlItem"
+
+    DuplicateOriginalUrlResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, message, data]
+      properties:
+        ok:
+          type: boolean
+          enum: [false]
+        message:
+          type: string
+          example: Esta URL ya cuenta con un registro.
+        data:
+          $ref: "#/components/schemas/ShortUrlItem"
+
+    CodeNotFoundResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, message]
+      properties:
+        ok:
+          type: boolean
+          enum: [false]
+        message:
+          type: string
+          example: Código no encontrado.
+
+    GenericError:
+      type: object
+      additionalProperties: true
+      description: Error genérico (Laravel puede devolver diferentes formas según el handler).
+
+    LaravelValidationError:
+      type: object
+      additionalProperties: true
+      description: Formato típico de validación en Laravel cuando se usa `postJson/getJson`.
+
