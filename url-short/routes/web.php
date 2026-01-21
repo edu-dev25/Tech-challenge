@@ -20,3 +20,4 @@ Route::get('/urls/list', function () {
 
 Route::get('/urls', [UrlController::class, 'index'])->name('urls.index');
 Route::post('/urls', [UrlController::class, 'store'])->name('urls.store');
+Route::get('/urls/{code}', [UrlController::class, 'showByCode'])->name('urls.show');

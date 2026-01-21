@@ -24,6 +24,34 @@ class UrlController extends Controller
         ]);
     }
 
+    public function showByCode(Request $request, string $code): JsonResponse
+    {
+        $item = ShortUrl::query()
+            ->where('code', $code)
+            ->first(['id', 'code', 'original_url', 'created_at', 'updated_at']);
+
+        if (!$item) {
+            return response()->json(
+                [
+                    'ok' => false,
+                    'message' => 'Código no encontrado.',
+                ],
+                404,
+            );
+        }
+
+        return response()->json([
+            'ok' => true,
+            'data' => [
+                'id' => $item->id,
+                'code' => $item->code,
+                'original_url' => $item->original_url,
+                'created_at' => $item->created_at,
+                'updated_at' => $item->updated_at,
+            ],
+        ]);
+    }
+
     protected function generateUniqueShortCode(
         AppServiceShortCodeURL $shortCodeService,
         string $originalUrl,
