@@ -21,3 +21,12 @@ Route::get('/urls/list', function () {
 Route::get('/urls', [UrlController::class, 'index'])->name('urls.index');
 Route::post('/urls', [UrlController::class, 'store'])->name('urls.store');
 Route::get('/urls/{code}', [UrlController::class, 'showByCode'])->name('urls.show');
+
+// Vista "Wait a moment": recibe {code} y consulta al backend vía /urls/{code}
+Route::get('/{code}', function (string $code) {
+    return Inertia::render('urls/wait', [
+        'code' => $code,
+    ]);
+})
+    ->where('code', '[0-9a-fA-F]{8}')
+    ->name('short.wait');
